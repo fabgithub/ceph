@@ -614,6 +614,8 @@ static int do_map()
 
       server.start();
       ioctl(nbd, NBD_DO_IT);
+      ioctl(nbd, NBD_CLEAR_QUE);
+      ioctl(nbd, NBD_CLEAR_SOCK);
       server.stop();
     }
 
@@ -650,8 +652,10 @@ static int do_unmap()
     return nbd;
   }
 
-  if (ioctl(nbd, NBD_DISCONNECT) < 0)
+  ioctl(nbd, NBD_CLEAR_QUE);
+  if (ioctl(nbd, NBD_DISCONNECT) < 0) {
     cerr << "rbd-nbd: the device is not used" << std::endl;
+  }
   ioctl(nbd, NBD_CLEAR_SOCK);
   close(nbd);
 
@@ -727,6 +731,7 @@ static int rbd_nbd(int argc, const char *argv[])
   env_to_vec(args);
   global_init(NULL, args, CEPH_ENTITY_TYPE_CLIENT, CODE_ENVIRONMENT_DAEMON,
               CINIT_FLAG_UNPRIVILEGED_DAEMON_DEFAULTS);
+  g_ceph_context->_conf->set_val_or_die("pid_file", "");
 
   std::vector<const char*>::iterator i;
   std::ostringstream err;
